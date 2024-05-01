@@ -155,7 +155,12 @@ class _GalleryPageState extends State<GalleryPage> {
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else if (snapshot.data == null) {
-              return const Center(child: Text('No images found'));
+              return const Center(
+                  child: Text('No images found',
+                      style: TextStyle(
+                          fontSize: 24,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold)));
             } else {
               images = snapshot.data?.hits ?? [];
               return Column(
@@ -234,6 +239,23 @@ class _GalleryPageState extends State<GalleryPage> {
               );
             }
           }),
+      // floating button to scroll to top
+      // show only when user scrolls down and scroll controller is attached to a scroll view
+      floatingActionButton: (scrollController.hasClients)
+          ? (scrollController.position.pixels > 0)
+              ? FloatingActionButton(
+                  backgroundColor: Colors.black,
+                  onPressed: () {
+                    scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: const Icon(Icons.arrow_upward, color: Colors.white),
+                )
+              : null
+          : null,
     );
   }
 
