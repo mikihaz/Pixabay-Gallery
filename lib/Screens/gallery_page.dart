@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:pixabay_gallery/model/pixabay_api.dart';
 import 'package:pixabay_gallery/widgets/grid_view_photo_blocks.dart';
 
@@ -13,6 +11,7 @@ class GalleryPage extends StatefulWidget {
 
 class _GalleryPageState extends State<GalleryPage> {
   List<Hit> images = [];
+  String searchQuery = '';
   TextEditingController searchController = TextEditingController();
   late Future<PixabayResponse> response;
   int isHoveringId = -1;
@@ -25,8 +24,8 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   void initState() {
     super.initState();
-    _loadImages();
-    searchController.addListener(_onSearchChanged);
+    loadImages();
+    searchController.addListener(onSearchChanged);
     scrollController.addListener(loadMoreImages);
     scrollController.addListener(buildFloatingActionButton);
     response = PixabayResponse.searchImages('');
@@ -39,18 +38,23 @@ class _GalleryPageState extends State<GalleryPage> {
     super.dispose();
   }
 
-  void _loadImages() async {
+  void loadImages() async {
     // Fetch images from Pixabay API
     final query = searchController.text;
     // Update _images list
     setState(() {
+      searchQuery = query;
       response = PixabayResponse.searchImages(query);
     });
   }
 
-  void _onSearchChanged() {
+  void onSearchChanged() {
+    // check if the user has new input
+    if (searchController.text == searchQuery) {
+      return;
+    }
     // Call _loadImages()
-    _loadImages();
+    loadImages();
   }
 
   void openFullScreenImage(Hit image) {
@@ -355,7 +359,7 @@ class _GalleryPageState extends State<GalleryPage> {
       appBar: AppBar(
         title: const Text('Pixabay Gallery'),
         actions: [
-          isSearchClicked && floatingActionButton == null
+          isSearchClicked
               ? IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
@@ -391,7 +395,7 @@ class _GalleryPageState extends State<GalleryPage> {
                     FocusScope.of(context).requestFocus(FocusNode());
                   },
                 ),
-          if (isSearchClicked && floatingActionButton == null)
+          if (isSearchClicked)
             Container(
               margin: const EdgeInsets.only(
                 right: 8,
@@ -422,7 +426,7 @@ class _GalleryPageState extends State<GalleryPage> {
       body: FutureBuilder<PixabayResponse>(
           future: response,
           builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                   child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
@@ -537,11 +541,13 @@ class _GalleryPageState extends State<GalleryPage> {
           },
           child: const Icon(Icons.arrow_upward, color: Colors.white),
         );
+        isSearchClicked = false;
       });
     } else if (scrollController.position.pixels <= 10.0 &&
         floatingActionButton != null) {
       setState(() {
         floatingActionButton = null;
+        isSearchClicked = true;
       });
     }
   }
