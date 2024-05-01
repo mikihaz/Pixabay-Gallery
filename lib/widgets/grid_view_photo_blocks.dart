@@ -26,23 +26,26 @@ class GridViewPhotoBlocks extends StatelessWidget {
                       NetworkImage(image.largeImageURL ?? ''), context)
                   .then((_) => image.largeImageURL ?? ''),
               builder: (context, snapshot) {
-                return Image.network(
-                  // If the high quality image is loaded, display it. Otherwise, display the low quality image
-                  snapshot.connectionState == ConnectionState.done &&
-                          snapshot.hasData
-                      ? snapshot.data ?? ''
-                      : image.previewURL ?? '',
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) {
-                      return child;
-                    } else {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                  },
+                return Hero(
+                  tag: 'imageHero${image.id}',
+                  child: Image.network(
+                    // If the high quality image is loaded, display it. Otherwise, display the low quality image
+                    snapshot.connectionState == ConnectionState.done &&
+                            snapshot.hasData
+                        ? snapshot.data ?? ''
+                        : image.previewURL ?? '',
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) {
+                        return child;
+                      } else {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                    },
+                  ),
                 );
               },
             ),

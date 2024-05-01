@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:pixabay_gallery/model/pixabay_api.dart';
 import 'package:pixabay_gallery/widgets/grid_view_photo_blocks.dart';
 
@@ -18,6 +20,7 @@ class _GalleryPageState extends State<GalleryPage> {
   ScrollController scrollController = ScrollController();
   int currentPage = 1;
   bool isLoading = false;
+  Widget? floatingActionButton;
 
   @override
   void initState() {
@@ -25,6 +28,7 @@ class _GalleryPageState extends State<GalleryPage> {
     _loadImages();
     searchController.addListener(_onSearchChanged);
     scrollController.addListener(loadMoreImages);
+    scrollController.addListener(buildFloatingActionButton);
     response = PixabayResponse.searchImages('');
   }
 
@@ -49,8 +53,279 @@ class _GalleryPageState extends State<GalleryPage> {
     _loadImages();
   }
 
-  void _openFullScreenImage(String imageUrl) {
+  void openFullScreenImage(Hit image) {
     // Implement full-screen image display with animation
+    // open a dialog with the image
+    showDialog(
+      context: context,
+      builder: (contextDialog) {
+        Hit localImage = images.firstWhere((element) => element.id == image.id);
+        int index = images.indexOf(localImage);
+        return StatefulBuilder(builder: (context, setState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Stack(
+              children: [
+                Container(
+                  // width: MediaQuery.of(context).size.width * 0.6,
+                  // height: MediaQuery.of(context).size.height,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.black,
+                    // image: DecorationImage(
+                    //   image: NetworkImage(localImage.largeImageURL ?? ''),
+                    //   fit: BoxFit.contain,
+                    // ),
+                  ),
+                  clipBehavior: Clip.hardEdge,
+                  child: FutureBuilder<String>(
+                    future: precacheImage(
+                            NetworkImage(localImage.largeImageURL ?? ''),
+                            context)
+                        .then((_) => localImage.largeImageURL ?? ''),
+                    builder: (context, snapshot) {
+                      return Hero(
+                        tag: 'imageHero${localImage.id}',
+                        child: InteractiveViewer(
+                          trackpadScrollCausesScale: true,
+                          child: Image.network(
+                            snapshot.connectionState == ConnectionState.done &&
+                                    snapshot.hasData
+                                ? snapshot.data ?? ''
+                                : localImage.previewURL ?? '',
+                            width: double.infinity,
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              } else {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // close button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                // Image details
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Previous button
+                        if (index > 0)
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios,
+                                color: Colors.white),
+                            onPressed: () {
+                              if (index > 0) {
+                                setState(() {
+                                  localImage = images[index - 1];
+                                  index--;
+                                });
+                              }
+                            },
+                          ),
+                        // Likes
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.favorite,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              localImage.likes.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Views
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.remove_red_eye,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              localImage.views.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Comments
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.comment,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              localImage.comments.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Downloads
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.download,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              localImage.downloads.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Next button
+                        if (index < images.length - 1)
+                          IconButton(
+                            icon: const Icon(Icons.arrow_forward_ios,
+                                color: Colors.white),
+                            onPressed: () {
+                              if (index < images.length - 1) {
+                                setState(() {
+                                  localImage = images[index + 1];
+                                  index++;
+                                });
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                // User details
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage:
+                              NetworkImage(localImage.userImageURL ?? ''),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          localImage.user ?? 'Unknown',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Next button
+                // if (index < images.length - 1)
+                //   Positioned(
+                //     right: 5,
+                //     bottom: 0,
+                //     child: IconButton(
+                //       icon: const Icon(Icons.arrow_forward_ios,
+                //           color: Colors.white),
+                //       onPressed: () {
+                //         if (index < images.length - 1) {
+                //           setState(() {
+                //             localImage = images[index + 1];
+                //             index++;
+                //           });
+                //         }
+                //       },
+                //     ),
+                //   ),
+                // Previous button
+                // if (index > 0)
+                //   Positioned(
+                //     left: 5,
+                //     bottom: 0,
+                //     child: IconButton(
+                //       icon:
+                //           const Icon(Icons.arrow_back_ios, color: Colors.white),
+                //       onPressed: () {
+                //         if (index > 0) {
+                //           setState(() {
+                //             localImage = images[index - 1];
+                //             index--;
+                //           });
+                //         }
+                //       },
+                //     ),
+                //   ),
+              ],
+            ),
+          );
+        });
+      },
+    );
   }
 
   void loadMoreImages() async {
@@ -80,7 +355,7 @@ class _GalleryPageState extends State<GalleryPage> {
       appBar: AppBar(
         title: const Text('Pixabay Gallery'),
         actions: [
-          isSearchClicked
+          isSearchClicked && floatingActionButton == null
               ? IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
@@ -116,7 +391,7 @@ class _GalleryPageState extends State<GalleryPage> {
                     FocusScope.of(context).requestFocus(FocusNode());
                   },
                 ),
-          if (isSearchClicked)
+          if (isSearchClicked && floatingActionButton == null)
             Container(
               margin: const EdgeInsets.only(
                 right: 8,
@@ -183,7 +458,7 @@ class _GalleryPageState extends State<GalleryPage> {
                           focusColor: Colors.transparent,
                           // hoverColor: Colors.black.withOpacity(0.5),
                           onTap: () {
-                            _openFullScreenImage(image.largeImageURL ?? '');
+                            openFullScreenImage(image);
                           },
                           // onHover: (isHovering) {
                           //   // Implement hover effect
@@ -237,21 +512,7 @@ class _GalleryPageState extends State<GalleryPage> {
           }),
       // floating button to scroll to top
       // show only when user scrolls down and scroll controller is attached to a scroll view
-      floatingActionButton: (scrollController.hasClients)
-          ? (scrollController.position.pixels > 0)
-              ? FloatingActionButton(
-                  backgroundColor: Colors.black,
-                  onPressed: () {
-                    scrollController.animateTo(
-                      0,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  child: const Icon(Icons.arrow_upward, color: Colors.white),
-                )
-              : null
-          : null,
+      floatingActionButton: floatingActionButton,
     );
   }
 
@@ -259,5 +520,29 @@ class _GalleryPageState extends State<GalleryPage> {
     // Calculate the number of columns based on screen width
     const int minWidth = 220;
     return (screenWidth / minWidth).floor();
+  }
+
+  void buildFloatingActionButton() {
+    // Implement floating action button
+    if (scrollController.hasClients &&
+        scrollController.position.pixels > 10.0 &&
+        floatingActionButton == null) {
+      setState(() {
+        floatingActionButton = FloatingActionButton(
+          backgroundColor: Colors.black,
+          onPressed: () {
+            scrollController.animateTo(0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut);
+          },
+          child: const Icon(Icons.arrow_upward, color: Colors.white),
+        );
+      });
+    } else if (scrollController.position.pixels <= 10.0 &&
+        floatingActionButton != null) {
+      setState(() {
+        floatingActionButton = null;
+      });
+    }
   }
 }
