@@ -181,15 +181,16 @@ class _GalleryPageState extends State<GalleryPage> {
                         final image = images[index];
                         return InkWell(
                           focusColor: Colors.transparent,
+                          // hoverColor: Colors.black.withOpacity(0.5),
                           onTap: () {
                             _openFullScreenImage(image.largeImageURL ?? '');
                           },
-                          onHover: (isHovering) {
-                            // Implement hover effect
-                            setState(() {
-                              isHoveringId = isHovering ? (image.id ?? -1) : -1;
-                            });
-                          },
+                          // onHover: (isHovering) {
+                          //   // Implement hover effect
+                          //   setState(() {
+                          //     isHoveringId = isHovering ? (image.id ?? -1) : -1;
+                          //   });
+                          // },
                           child: Container(
                             // padding: const EdgeInsets.all(8),
                             // margin: const EdgeInsets.all(8),
@@ -202,24 +203,19 @@ class _GalleryPageState extends State<GalleryPage> {
                               //   width: 1,
                               // ),
                               borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                isHoveringId == image.id
-                                    ? BoxShadow(
-                                        color: Colors.grey[300] ??
-                                            Colors.transparent,
-                                        blurRadius: 2,
-                                        spreadRadius: 5,
-                                      )
-                                    : const BoxShadow(
-                                        color: Colors.transparent),
-                              ],
+                              // boxShadow: [
+                              //   isHoveringId == image.id
+                              //       ? BoxShadow(
+                              //           color: Colors.grey[300] ??
+                              //               Colors.transparent,
+                              //           blurRadius: 2,
+                              //           spreadRadius: 5,
+                              //         )
+                              //       : const BoxShadow(
+                              //           color: Colors.transparent),
+                              // ],
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                GridViewPhotoBlocks(image: image),
-                              ],
-                            ),
+                            child: GridViewPhotoBlocks(image: image),
                           ),
                         );
                       },

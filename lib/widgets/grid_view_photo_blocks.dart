@@ -20,12 +20,31 @@ class GridViewPhotoBlocks extends StatelessWidget {
           clipBehavior: Clip.hardEdge,
           child: AspectRatio(
             aspectRatio: 1,
-            child: Image.network(
-              image.previewURL ?? '',
-              // change image size to fit the container
-              width: double.infinity,
-              // height: 200,
-              fit: BoxFit.cover,
+            child: FutureBuilder<String>(
+              // Replace 'highQualityImageUrl' with the URL of your high quality image
+              future: precacheImage(
+                      NetworkImage(image.largeImageURL ?? ''), context)
+                  .then((_) => image.largeImageURL ?? ''),
+              builder: (context, snapshot) {
+                return Image.network(
+                  // If the high quality image is loaded, display it. Otherwise, display the low quality image
+                  snapshot.connectionState == ConnectionState.done &&
+                          snapshot.hasData
+                      ? snapshot.data ?? ''
+                      : image.previewURL ?? '',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) {
+                      return child;
+                    } else {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                  },
+                );
+              },
             ),
           ),
         ),
